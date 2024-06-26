@@ -38,7 +38,7 @@ func NewAgent[T any]() *Agent[T] {
 	return agent
 }
 
-// Funcion to close publisher and subscriber connections
+// CloseConnections is a funcion used to close publisher and subscriber connections
 // Meant to be ran as a goroutine
 func (a *Agent[T]) CloseConnections() {
 	for {
@@ -61,6 +61,9 @@ func (a *Agent[T]) CloseConnections() {
 	}
 }
 
+// AddSubscriber Add new subscriber to the agent
+// Optional quit channel, pass nil if not needed
+// Return channel of a new subscriber
 func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T {
 	a.Lock()
 	defer a.Unlock()
@@ -82,6 +85,9 @@ func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T 
 	return sub
 }
 
+// AddPublisher Add new publisher to the agent
+// Optional quit channel, pass nil if not needed
+// Return channel of a new publisher
 func (a *Agent[T]) AddPublisher(bufferSize int, quit <-chan struct{}) <-chan string {
 	a.Lock()
 	defer a.Unlock()
@@ -103,6 +109,7 @@ func (a *Agent[T]) AddPublisher(bufferSize int, quit <-chan struct{}) <-chan str
 	return pub
 }
 
+// BroadcastEvent is used to send a message to subscribers
 func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 	a.RLock()
 	defer a.RUnlock()
@@ -122,6 +129,7 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 	wg.Wait()
 }
 
+// NotifyPublishers is used to notify Publishers, when new subscriber connected
 func (a *Agent[T]) NotifyPublishers() {
 	a.RLock()
 	defer a.RUnlock()
