@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"math/big"
+	"os"
 )
 
 func GenerateTLSConfig() *tls.Config {
@@ -28,6 +29,6 @@ func GenerateTLSConfig() *tls.Config {
 	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{tlsCert},
-		NextProtos:   []string{"quic-pub-sub"},
+		NextProtos:   []string{os.Getenv("NEXTPROTOS")},
 	}
 }

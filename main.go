@@ -3,18 +3,19 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"github.com/joho/godotenv"
 	"github.com/quic-go/quic-go"
 	"log"
+	"os"
 	"pubsubQUIC/config"
 	"pubsubQUIC/pubsub"
 )
 
-const pubAddr = "localhost:5000" //TODO ENV
-const subAddr = "localhost:4000"
-
 type messageType string
 
 func main() {
+	onRun()
+
 	agent := pubsub.NewAgent[messageType]()
 
 	go func() { log.Fatal(publisherServer(agent)) }()
@@ -22,7 +23,7 @@ func main() {
 }
 
 func publisherServer(a *pubsub.Agent[messageType]) error {
-	listener, err := quic.ListenAddr(pubAddr, config.GenerateTLSConfig(), nil)
+	listener, err := quic.ListenAddr(os.Getenv("PUBLISHER_ADDRESS"), config.GenerateTLSConfig(), nil)
 	if err != nil {
 		return err
 	}
@@ -60,10 +61,10 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 func subscriberServer(a *pubsub.Agent[messageType]) error {
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
-		NextProtos:         []string{"quic-pub-sub"},
+		NextProtos:         []string{os.Getenv("NEXTPROTOS")},
 	}
 
-	listener, err := quic.ListenAddr(subAddr, tlsConf, nil)
+	listener, err := quic.ListenAddr(os.Getenv("SUBSCRIBER_ADDRESS"), tlsConf, nil)
 	if err != nil {
 		return err
 	}
@@ -99,5 +100,12 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 func informPublishers(a *pubsub.Agent[messageType]) {
 	if a.ConnectedSubscribers() == 0 {
 		a.NotifyPublishers("Currently there are no subscribers connected")
+	}
+}
+
+func onRun() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
 	}
 }
