@@ -49,4 +49,25 @@ func TestClosingConnections(t *testing.T) {
 	require.Empty(t, pub)
 }
 
+func TestSubscriberNotification(t *testing.T) {
+	agent := NewAgent[string]()
+	pub := agent.AddPublisher(0, nil)
+	agent.AddSubscriber(0, nil)
+	done := make(chan bool)
+	go func() {
+		select {
+		case msg := <-pub:
+			require.NotNil(t, msg)
+			done <- true
+		}
+
+	}()
+	agent.NotifyPublishers()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Test timed out waiting for event")
+	}
+}
+
 //TODO timeout test
