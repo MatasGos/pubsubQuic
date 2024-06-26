@@ -34,3 +34,17 @@ func TestBroadcast(t *testing.T) {
 		t.Fatal("Test timed out waiting for event")
 	}
 }
+
+func TestClosingConnections(t *testing.T) {
+	agent := NewAgent[string]()
+	subQuitChan := make(chan struct{})
+	pubQuitChan := make(chan struct{})
+	sub := agent.AddSubscriber(0, subQuitChan)
+	pub := agent.AddPublisher(0, pubQuitChan)
+
+	subQuitChan <- struct{}{}
+	pubQuitChan <- struct{}{}
+
+	require.Empty(t, sub)
+	require.Empty(t, pub)
+}
