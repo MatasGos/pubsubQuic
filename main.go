@@ -47,6 +47,10 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 			a.AddPublisher(0, conn.Context().Done())
 			informPublishers(a)
 
+			context.AfterFunc(conn.Context(), func() {
+				stream.Close()
+			})
+
 			buf := make([]byte, 1024)
 			for {
 				n, err := stream.Read(buf)
@@ -87,7 +91,10 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 
 			ch := a.AddSubscriber(0, conn.Context().Done())
 
-			context.AfterFunc(conn.Context(), func() { informPublishers(a) })
+			context.AfterFunc(conn.Context(), func() {
+				informPublishers(a)
+				stream.Close()
+			})
 
 			for message := range ch {
 				_, err := stream.Write([]byte(message))
