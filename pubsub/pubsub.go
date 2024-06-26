@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -16,7 +17,7 @@ type Agent[T any] struct {
 	sync.RWMutex
 	subId        subId
 	pubId        pubId
-	pubs         map[pubId]chan T
+	pubs         map[pubId]chan string
 	subs         map[subId]chan T
 	closeSubChan chan subId
 	closePubChan chan pubId
@@ -26,7 +27,7 @@ type Agent[T any] struct {
 
 func NewAgent[T any]() *Agent[T] {
 	agent := &Agent[T]{
-		pubs:         make(map[pubId]chan T),
+		pubs:         make(map[pubId]chan string),
 		subs:         make(map[subId]chan T),
 		closeSubChan: make(chan subId, 100),
 		closePubChan: make(chan pubId, 100),
@@ -68,6 +69,7 @@ func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T 
 	a.subId++
 	a.subs[id] = sub
 	go func() {
+		a.NotifyPublishers(id)
 		select {
 		case <-quit:
 		case <-a.closeChan:
@@ -81,10 +83,10 @@ func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T 
 	return sub
 }
 
-func (a *Agent[T]) AddPublisher(bufferSize int, quit <-chan struct{}) <-chan T {
+func (a *Agent[T]) AddPublisher(bufferSize int, quit <-chan struct{}) <-chan string {
 	a.Lock()
 	defer a.Unlock()
-	pub := make(chan T, bufferSize)
+	pub := make(chan string, bufferSize)
 	id := a.pubId
 	a.pubId++
 	a.pubs[id] = pub
@@ -113,10 +115,29 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 			select {
 			case listener <- event:
 			case <-time.After(a.timeout):
-				log.Printf("Connection %1 timed out\n", id)
+				log.Printf("Connection %d has timed out\n", id)
 			case <-ctx.Done():
 			}
 		}(subscriber, &wg)
+	}
+	wg.Wait()
+}
+
+func (a *Agent[T]) NotifyPublishers(id subId) {
+	a.RLock()
+	defer a.RUnlock()
+	event := fmt.Sprintf("Subscriber id %d has connected", id)
+	var wg sync.WaitGroup
+	for id, publisher := range a.pubs {
+		wg.Add(1)
+		go func(listener chan string, w *sync.WaitGroup) {
+			defer w.Done()
+			select {
+			case listener <- event:
+			case <-time.After(a.timeout):
+				log.Printf("Connection %d timed out\n", id)
+			}
+		}(publisher, &wg)
 	}
 	wg.Wait()
 }
