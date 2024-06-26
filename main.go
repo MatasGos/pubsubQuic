@@ -82,6 +82,7 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 			}
 
 			ch := a.AddSubscriber(0, conn.Context().Done())
+			a.NotifyPublishers()
 
 			for message := range ch {
 				_, err := stream.Write([]byte(message))

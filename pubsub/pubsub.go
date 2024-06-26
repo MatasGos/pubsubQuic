@@ -69,7 +69,6 @@ func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T 
 	a.subId++
 	a.subs[id] = sub
 	go func() {
-		a.NotifyPublishers(id)
 		select {
 		case <-quit:
 		case <-a.closeChan:
@@ -123,10 +122,10 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 	wg.Wait()
 }
 
-func (a *Agent[T]) NotifyPublishers(id subId) {
+func (a *Agent[T]) NotifyPublishers() {
 	a.RLock()
 	defer a.RUnlock()
-	event := fmt.Sprintf("Subscriber id %d has connected", id)
+	event := fmt.Sprint("New subscriber has connected")
 	var wg sync.WaitGroup
 	for id, publisher := range a.pubs {
 		wg.Add(1)
