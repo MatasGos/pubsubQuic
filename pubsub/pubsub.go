@@ -2,7 +2,6 @@ package pubsub
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -36,6 +35,10 @@ func NewAgent[T any]() *Agent[T] {
 	}
 
 	return agent
+}
+
+func (a *Agent[T]) ConnectedSubscribers() int {
+	return len(a.subs)
 }
 
 // CloseConnections is a funcion used to close publisher and subscriber connections
@@ -129,18 +132,17 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 	wg.Wait()
 }
 
-// NotifyPublishers is used to notify Publishers, when new subscriber connected
-func (a *Agent[T]) NotifyPublishers() {
+// NotifyPublishers is used to notify all Publishers
+func (a *Agent[T]) NotifyPublishers(message string) {
 	a.RLock()
 	defer a.RUnlock()
-	event := fmt.Sprint("New subscriber has connected")
 	var wg sync.WaitGroup
 	for id, publisher := range a.pubs {
 		wg.Add(1)
 		go func(listener chan string, w *sync.WaitGroup) {
 			defer w.Done()
 			select {
-			case listener <- event:
+			case listener <- message:
 			case <-time.After(a.timeout):
 				log.Printf("Connection %d timed out\n", id)
 			}

@@ -19,7 +19,6 @@ func main() {
 
 	go func() { log.Fatal(publisherServer(agent)) }()
 	go func() { log.Fatal(subscriberServer(agent)) }()
-	go agent.CloseConnections()
 }
 
 func publisherServer(a *pubsub.Agent[messageType]) error {
@@ -42,6 +41,7 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 			}
 
 			a.AddPublisher(0, conn.Context().Done())
+			informPublishers(a)
 
 			buf := make([]byte, 1024)
 			for {
@@ -82,7 +82,8 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 			}
 
 			ch := a.AddSubscriber(0, conn.Context().Done())
-			a.NotifyPublishers()
+
+			context.AfterFunc(conn.Context(), func() { informPublishers(a) })
 
 			for message := range ch {
 				_, err := stream.Write([]byte(message))
@@ -91,5 +92,12 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 				}
 			}
 		}(conn)
+	}
+}
+
+// informPublishers informs publishers if there are no subscribers connected
+func informPublishers(a *pubsub.Agent[messageType]) {
+	if a.ConnectedSubscribers() == 0 {
+		a.NotifyPublishers("Currently there are no subscribers connected")
 	}
 }
