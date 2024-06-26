@@ -2,7 +2,7 @@ package pubsub
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"sync"
 	"time"
 )
@@ -106,14 +106,14 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 	a.RLock()
 	defer a.RUnlock()
 	var wg sync.WaitGroup
-	for _, subscriber := range a.subs {
+	for id, subscriber := range a.subs {
 		wg.Add(1)
 		go func(listener chan T, w *sync.WaitGroup) {
 			defer w.Done()
 			select {
 			case listener <- event:
 			case <-time.After(a.timeout):
-				fmt.Printf("Connection timed out\n")
+				log.Printf("Connection %1 timed out\n", id)
 			case <-ctx.Done():
 			}
 		}(subscriber, &wg)

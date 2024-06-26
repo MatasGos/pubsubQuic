@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
 	"github.com/quic-go/quic-go"
 	"log"
 	"pubsubQUIC/config"
@@ -39,7 +38,7 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 		go func(conn quic.Connection) {
 			stream, err := conn.AcceptStream(conn.Context())
 			if err != nil {
-				panic(err) //TODO handle panic
+				log.Println("Failed to accept stream: ", err)
 			}
 
 			a.AddPublisher(0, conn.Context().Done())
@@ -48,7 +47,7 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 			for {
 				n, err := stream.Read(buf)
 				if err != nil {
-					fmt.Println("Error when reading stream: ", err) //TODO logging
+					log.Println("Error when reading stream: ", err)
 				}
 
 				message := messageType(buf[:n])
@@ -79,7 +78,7 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 		go func(conn quic.Connection) {
 			stream, err := conn.AcceptStream(conn.Context())
 			if err != nil {
-				panic(err) //TODO handle panic
+				log.Println("Failed to accept stream: ", err)
 			}
 
 			ch := a.AddSubscriber(0, conn.Context().Done())
@@ -87,7 +86,7 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 			for message := range ch {
 				_, err := stream.Write([]byte(message))
 				if err != nil {
-					fmt.Println("Error when writing stream: ", err) //TODO logging
+					log.Println("Error when writing to stream: ", err)
 				}
 			}
 		}(conn)
