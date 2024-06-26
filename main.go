@@ -20,6 +20,9 @@ func main() {
 
 	go func() { log.Fatal(publisherServer(agent)) }()
 	go func() { log.Fatal(subscriberServer(agent)) }()
+
+	//block in main thread forever
+	select {}
 }
 
 func publisherServer(a *pubsub.Agent[messageType]) error {
