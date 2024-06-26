@@ -18,24 +18,24 @@ func main() {
 
 	agent := pubsub.NewAgent[messageType]()
 
-	go func() { log.Fatal(publisherServer(agent)) }()
-	go func() { log.Fatal(subscriberServer(agent)) }()
+	go publisherServer(agent)
+	go subscriberServer(agent)
 
 	//block in main thread forever
 	select {}
 }
 
-func publisherServer(a *pubsub.Agent[messageType]) error {
+func publisherServer(a *pubsub.Agent[messageType]) {
 	listener, err := quic.ListenAddr(os.Getenv("PUBLISHER_ADDRESS"), config.GenerateTLSConfig(), nil)
 	if err != nil {
-		return err
+		log.Fatal("Error when creating publisher server: ", err)
 	}
 	defer listener.Close()
 
 	for {
 		conn, err := listener.Accept(context.Background())
 		if err != nil {
-			return err
+			log.Fatal("Error when accepting connection: ", err)
 		}
 
 		go func(conn quic.Connection) {
@@ -65,7 +65,7 @@ func publisherServer(a *pubsub.Agent[messageType]) error {
 	}
 }
 
-func subscriberServer(a *pubsub.Agent[messageType]) error {
+func subscriberServer(a *pubsub.Agent[messageType]) {
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         []string{os.Getenv("NEXTPROTOS")},
@@ -73,14 +73,14 @@ func subscriberServer(a *pubsub.Agent[messageType]) error {
 
 	listener, err := quic.ListenAddr(os.Getenv("SUBSCRIBER_ADDRESS"), tlsConf, nil)
 	if err != nil {
-		return err
+		log.Fatal("Error when creating subscriber server: ", err)
 	}
 	defer listener.Close()
 
 	for {
 		conn, err := listener.Accept(context.Background())
 		if err != nil {
-			return err
+			log.Fatal("Error when accepting connection: ", err)
 		}
 
 		go func(conn quic.Connection) {
