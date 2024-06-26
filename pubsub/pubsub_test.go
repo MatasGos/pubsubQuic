@@ -58,16 +58,19 @@ func TestSubscriberNotification(t *testing.T) {
 		select {
 		case msg := <-pub:
 			require.NotNil(t, msg)
+			require.Equal(t, "message", msg)
 			done <- true
 		}
 
 	}()
-	agent.NotifyPublishers()
+	agent.NotifyPublishers("message")
 	select {
 	case <-done:
 	case <-time.After(2 * time.Second):
 		t.Fatal("Test timed out waiting for event")
 	}
+
+	require.Equal(t, 1, agent.ConnectedSubscribers())
 }
 
 //TODO timeout test
