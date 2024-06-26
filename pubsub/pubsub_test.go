@@ -48,3 +48,5 @@ func TestClosingConnections(t *testing.T) {
 	require.Empty(t, sub)
 	require.Empty(t, pub)
 }
+
+//TODO timeout test
