@@ -20,18 +20,20 @@ type Agent[T any] struct {
 	subs         map[subId]chan T
 	closeSubChan chan subId
 	closePubChan chan pubId
-	closeChan    chan bool
+	closeChan    <-chan struct{}
 	timeout      time.Duration
 }
 
-func NewAgent[T any]() *Agent[T] {
+// NewAgent Creates new PubSub Agent
+// Optional quit channel, pass nil if not needed
+func NewAgent[T any](quit <-chan struct{}) *Agent[T] {
 	agent := &Agent[T]{
 		pubs:         make(map[pubId]chan string),
 		subs:         make(map[subId]chan T),
 		closeSubChan: make(chan subId, 100),
 		closePubChan: make(chan pubId, 100),
 		timeout:      timeout,
-		closeChan:    make(chan bool),
+		closeChan:    quit,
 	}
 
 	return agent
@@ -60,6 +62,8 @@ func (a *Agent[T]) CloseConnections() {
 				delete(a.pubs, id)
 			}
 			a.Unlock()
+		case <-a.closeChan:
+			return
 		}
 	}
 }

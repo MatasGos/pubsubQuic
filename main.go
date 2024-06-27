@@ -16,7 +16,7 @@ type messageType string
 func main() {
 	onRun()
 
-	agent := pubsub.NewAgent[messageType]()
+	agent := pubsub.NewAgent[messageType](nil)
 
 	go publisherServer(agent)
 	go subscriberServer(agent)
