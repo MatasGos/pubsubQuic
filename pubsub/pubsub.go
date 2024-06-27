@@ -41,8 +41,8 @@ func (a *Agent[T]) ConnectedSubscribers() int {
 	return len(a.subs)
 }
 
-// CloseConnections is a funcion used to close publisher and subscriber connections
-// Meant to be ran as a goroutine
+// CloseConnections is a function used to close publisher and subscriber connections
+// Meant to be run as a goroutine
 func (a *Agent[T]) CloseConnections() {
 	for {
 		select {
