@@ -48,6 +48,8 @@ func TestClosingConnections(t *testing.T) {
 	subQuitChan <- struct{}{}
 	pubQuitChan <- struct{}{}
 
+	go agent.CloseConnections()
+
 	require.Empty(t, sub)
 	require.Empty(t, pub)
 	require.NotNil(t, pub2)
