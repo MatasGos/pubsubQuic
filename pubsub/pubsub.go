@@ -128,6 +128,7 @@ func (a *Agent[T]) BroadcastEvent(ctx context.Context, event T) {
 			select {
 			case listener <- event:
 			case <-time.After(a.timeout):
+				a.closeSubChan <- id
 				log.Printf("Connection %d has timed out\n", id)
 			case <-ctx.Done():
 			}
@@ -148,6 +149,7 @@ func (a *Agent[T]) NotifyPublishers(message string) {
 			select {
 			case listener <- message:
 			case <-time.After(a.timeout):
+				a.closePubChan <- id
 				log.Printf("Connection %d timed out\n", id)
 			}
 		}(publisher, &wg)
