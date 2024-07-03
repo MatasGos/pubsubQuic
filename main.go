@@ -15,6 +15,7 @@ func main() {
 
 	go publisherServer(agent)
 	go subscriberServer(agent)
+	go agent.CloseConnections()
 
 	//block in main thread forever
 	select {}

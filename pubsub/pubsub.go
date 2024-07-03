@@ -63,6 +63,15 @@ func (a *Agent[T]) CloseConnections() {
 			}
 			a.Unlock()
 		case <-a.closeChan:
+			for id, sub := range a.subs {
+				close(sub)
+				delete(a.subs, id)
+			}
+
+			for id, pub := range a.pubs {
+				close(pub)
+				delete(a.pubs, id)
+			}
 			return
 		}
 	}
