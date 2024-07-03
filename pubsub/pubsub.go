@@ -81,13 +81,16 @@ func (a *Agent[T]) AddSubscriber(bufferSize int, quit <-chan struct{}) <-chan T 
 	go func() {
 		select {
 		case <-quit:
-		case <-a.closeChan:
-		}
+			a.Lock()
+			defer a.Unlock()
+			delete(a.subs, id)
+			close(sub)
 
-		a.Lock()
-		defer a.Unlock()
-		delete(a.subs, id)
-		close(sub)
+		case _, ok := <-sub:
+			if !ok {
+				return
+			}
+		}
 	}()
 	return sub
 }
@@ -105,13 +108,16 @@ func (a *Agent[T]) AddPublisher(bufferSize int, quit <-chan struct{}) <-chan str
 	go func() {
 		select {
 		case <-quit:
-		case <-a.closeChan:
+			a.Lock()
+			defer a.Unlock()
+			delete(a.pubs, id)
+			close(pub)
+		case _, ok := <-pub:
+			if !ok {
+				return
+			}
 		}
 
-		a.Lock()
-		defer a.Unlock()
-		delete(a.pubs, id)
-		close(pub)
 	}()
 	return pub
 }
